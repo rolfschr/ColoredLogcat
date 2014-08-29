@@ -19,6 +19,7 @@
 # script to highlight adb logcat output for console
 # written by jeff sharkey, http://jsharkey.org/
 # piping detection and popen() added by other android team members
+# multiple logcat format support added by rolf schroder
 
 
 import os, sys, re, StringIO
