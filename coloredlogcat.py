@@ -112,11 +112,10 @@ if __name__ == '__main__':
             timestamp, tagtype, tag, pid, message = mtime.groups()
         elif mthreadtime:
             timestamp, pid, _, tagtype, tag, message = mthreadtime.groups()
+        elif len(line) == 0:
+            break
         else:
-            if len(line) == 0:
-                break
-            else:
-                continue
+            continue
 
         linebuf = StringIO.StringIO()
         color = tag2color(tag)
