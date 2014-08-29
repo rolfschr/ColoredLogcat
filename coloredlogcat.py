@@ -1,19 +1,19 @@
 #!/usr/bin/python
 
 '''
-	Copyright 2009, The Android Open Source Project
+    Copyright 2009, The Android Open Source Project
 
-	Licensed under the Apache License, Version 2.0 (the "License"); 
-	you may not use this file except in compliance with the License. 
-	You may obtain a copy of the License at 
+    Licensed under the Apache License, Version 2.0 (the "License"); 
+    you may not use this file except in compliance with the License. 
+    You may obtain a copy of the License at 
 
-		http://www.apache.org/licenses/LICENSE-2.0 
+        http://www.apache.org/licenses/LICENSE-2.0 
 
-	Unless required by applicable law or agreed to in writing, software 
-	distributed under the License is distributed on an "AS IS" BASIS, 
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-	See the License for the specific language governing permissions and 
-	limitations under the License.
+    Unless required by applicable law or agreed to in writing, software 
+    distributed under the License is distributed on an "AS IS" BASIS, 
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+    See the License for the specific language governing permissions and 
+    limitations under the License.
 '''
 
 # script to highlight adb logcat output for console
@@ -35,115 +35,116 @@ TAG_WIDTH = 20
 HEADER_SIZE = 2 + TAG_WIDTH + 8 + 1
 
 TAGTYPE2COLOR = {
-	"V": WHITE,
-	"D": BLUE,
-	"I": GREEN,
-	"W": YELLOW,
-	"E": RED,
-}
+        "V": WHITE,
+        "D": BLUE,
+        "I": GREEN,
+        "W": YELLOW,
+        "E": RED,
+        }
 KNOWN_TAG_COLOR = CYAN
 KNOWN_TAGS = ["dalvikvm", "Process", "ActivityManager", "ActivityThread"]
 
 def format(fg=None, bg=None, bright=False, bold=False, dim=False, reset=False):
-	# manually derived from http://en.wikipedia.org/wiki/ANSI_escape_code#Codes
-	codes = []
-	if reset: codes.append("0")
-	else:
-		if not fg is None: codes.append("3%d" % (fg))
-		if not bg is None:
-			if not bright: codes.append("4%d" % (bg))
-			else: codes.append("10%d" % (bg))
-		if bold: codes.append("1")
-		elif dim: codes.append("2")
-		else: codes.append("22")
-	return "\033[%sm" % (";".join(codes))
+    # manually derived from http://en.wikipedia.org/wiki/ANSI_escape_code#Codes
+    codes = []
+    if reset: codes.append("0")
+    else:
+        if not fg is None: codes.append("3%d" % (fg))
+        if not bg is None:
+            if not bright: codes.append("4%d" % (bg))
+            else: codes.append("10%d" % (bg))
+        if bold: codes.append("1")
+        elif dim: codes.append("2")
+        else: codes.append("22")
+    return "\033[%sm" % (";".join(codes))
 
 
 def indent_wrap(message, indent=0, width=80):
-	wrap_area = width - indent
-	messagebuf = StringIO.StringIO()
-	current = 0
-	while current < len(message):
-		next = min(current + wrap_area, len(message))
-		messagebuf.write(message[current:next])
-		if next < len(message):
-			messagebuf.write("\n%s" % (" " * indent))
-		current = next
-	return messagebuf.getvalue()
+    wrap_area = width - indent
+    messagebuf = StringIO.StringIO()
+    current = 0
+    while current < len(message):
+        next = min(current + wrap_area, len(message))
+        messagebuf.write(message[current:next])
+        if next < len(message):
+            messagebuf.write("\n%s" % (" " * indent))
+        current = next
+    return messagebuf.getvalue()
 
 def tagtype2color(tagtype):
-	return TAGTYPE2COLOR[tagtype]
+    return TAGTYPE2COLOR[tagtype]
 
 def tag2color(tag):
-	if (tag in KNOWN_TAGS):
-		return KNOWN_TAG_COLOR
-	return None
+    if (tag in KNOWN_TAGS):
+        return KNOWN_TAG_COLOR
+    return None
 
 def format_tagtype(tagtype):
-	return "%s%s%s" % (format(fg=tagtype2color(tagtype)), tagtype, format(reset=True))
+    return "%s%s%s" % (format(fg=tagtype2color(tagtype)), tagtype, format(reset=True))
 
 
+#08-29 11:32:28.839 D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
+re_time = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*) ([A-Z])/(.*)\(\s*\d*\): (.*)$')
 
-re_tag = re.compile("^(.*?)([A-Z])/([^\(]+)\(([^\)]+)\): (.*)$")
-re_meta = re.compile("^(\d*-\d* \d*:\d*:\d*\.\d*)(.*?)$")
+#D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
+re_brief = re.compile("^([A-Z])/([^\(]+)\(([^\)]+)\): (.*)$")
+
+#08-29 13:35:56.819  1052  1052 D StatusBar.NetworkController: mDataConnected = false mShowRATIconAlways = false
+re_threadtime = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*)\s*(\d*)\s*(\d*) ([A-Z]) (.*): (.*)$')
 
 adb_args = ' '.join(sys.argv[1:])
 
 # if someone is piping in to us, use stdin as input.  if not, invoke adb logcat
 if os.isatty(sys.stdin.fileno()):
-	input = os.popen("adb %s logcat" % adb_args)
+    input = os.popen("adb %s logcat" % adb_args)
 else:
-	input = sys.stdin
+    input = sys.stdin
 
 while True:
-	try:
-		line = input.readline()
-	except KeyboardInterrupt:
-		break
+    try:
+        line = input.readline()
+    except KeyboardInterrupt:
+        break
 
-	timestamp = None
-	match = re_tag.match(line)
-	cur_header_size = HEADER_SIZE
-	if not match is None:
-		meta, tagtype, tag, owner, message = match.groups()
-		metamatch = re_meta.match(meta)
-		if (metamatch):
-			timestamp, _ = metamatch.groups()
+    cur_header_size = HEADER_SIZE
+    mbrief = re_brief.match(line)
+    mtime = re_time.match(line)
+    mthreadtime = re_threadtime.match(line)
+    if mbrief:
+        tagtype, tag, pid, message = mbrief.groups()
+        timestamp = None
+    elif mtime:
+        timestamp, tagtype, tag, pid, message = mtime.groups()
+    elif mthreadtime:
+        timestamp, pid, _, tagtype, tag, message = mthreadtime.groups()
+    else:
+        continue
 
-		linebuf = StringIO.StringIO()
-		color = tag2color(tag)
-		if (color == None):
-			color = tagtype2color(tagtype)
-		linebuf.write(format(fg=color))
-		linebuf.write("%s " % tagtype)
-		if (timestamp):
-			cur_header_size += len(timestamp) + 1
-			linebuf.write("%s " % timestamp)
+    linebuf = StringIO.StringIO()
+    color = tag2color(tag)
+    if color == None:
+        color = tagtype2color(tagtype)
+    linebuf.write(format(fg=color))
+    linebuf.write("%s " % tagtype)
 
+    if (timestamp):
+        cur_header_size += len(timestamp) + 1
+        linebuf.write("%s " % timestamp)
 
-		# right-align tag title and allocate color if needed
-		tag = tag.strip()
-		tag = tag[-TAG_WIDTH:].rjust(TAG_WIDTH)
-		linebuf.write("%s(%s): " % (tag, owner))
+    # right-align tag title and allocate color if needed
+    tag = tag.strip()
+    tag = tag[-TAG_WIDTH:].rjust(TAG_WIDTH)
+    pid = pid.rjust(5)
+    linebuf.write("%s(%s): " % (tag, pid))
 
-		# insert line wrapping as needed
-		message = indent_wrap(message, cur_header_size, WIDTH)
-		linebuf.write("%s" % message)
+    # insert line wrapping as needed
+    message = indent_wrap(message, cur_header_size, WIDTH)
+    linebuf.write("%s" % message)
 
-		linebuf.write(format(reset=True))
-		line = linebuf.getvalue()
+    linebuf.write(format(reset=True))
+    line = linebuf.getvalue()
 
-	print line
-	if len(line) == 0: break
-
-
-
-
-
-
-
-
-
-
-
+    print line
+    if len(line) == 0:
+        break
 
