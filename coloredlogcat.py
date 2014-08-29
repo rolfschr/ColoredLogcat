@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
     # if someone is piping in to us, use stdin as input.  if not, invoke adb logcat
     if os.isatty(sys.stdin.fileno()):
-        input = os.popen("adb %s logcat" % adb_args)
+        input = os.popen("adb logcat %s" % adb_args)
     else:
         input = sys.stdin
 
