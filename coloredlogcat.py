@@ -141,5 +141,5 @@ if __name__ == '__main__':
         linebuf.write(format(reset=True))
         line = linebuf.getvalue()
 
-        print line
+        print(line)
 
