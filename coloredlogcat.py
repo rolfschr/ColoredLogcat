@@ -25,16 +25,16 @@ import os, sys, re, StringIO
 import fcntl, termios, struct
 
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
-
+LIGHT_BACKGROUND = 0
+if LIGHT_BACKGROUND: WHITE = BLACK
 TAG_WIDTH = 20
-
 TAGTYPE2COLOR = {
         "V": WHITE,
         "D": BLUE,
         "I": GREEN,
         "W": YELLOW,
         "E": RED,
-        }
+}
 KNOWN_TAG_COLOR = CYAN
 KNOWN_TAGS = ["dalvikvm", "Process", "ActivityManager", "ActivityThread"]
 
