@@ -73,10 +73,6 @@ def tag2color(tag):
         return KNOWN_TAG_COLOR
     return None
 
-def format_tagtype(tagtype):
-    return "%s%s%s" % (format(fg=tagtype2color(tagtype)), tagtype, format(reset=True))
-
-
 if __name__ == '__main__':
     # unpack the current terminal width/height
     data = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, '1234')
