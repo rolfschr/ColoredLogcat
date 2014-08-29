@@ -24,15 +24,9 @@
 import os, sys, re, StringIO
 import fcntl, termios, struct
 
-# unpack the current terminal width/height
-data = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, '1234')
-HEIGHT, WIDTH = struct.unpack('hh',data)
-
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
 TAG_WIDTH = 20
-#D 08-29 11:58:36.739 ar.NetworkController( 1052): 
-HEADER_SIZE = 2 + TAG_WIDTH + 8 + 1
 
 TAGTYPE2COLOR = {
         "V": WHITE,
@@ -83,68 +77,73 @@ def format_tagtype(tagtype):
     return "%s%s%s" % (format(fg=tagtype2color(tagtype)), tagtype, format(reset=True))
 
 
-#08-29 11:32:28.839 D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
-re_time = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*) ([A-Z])/(.*)\(\s*\d*\): (.*)$')
+if __name__ == '__main__':
+    # unpack the current terminal width/height
+    data = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, '1234')
+    HEIGHT, WIDTH = struct.unpack('hh',data)
 
-#D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
-re_brief = re.compile("^([A-Z])/([^\(]+)\(([^\)]+)\): (.*)$")
+    #08-29 11:32:28.839 D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
+    re_time = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*) ([A-Z])/(.*)\(\s*\d*\): (.*)$')
 
-#08-29 13:35:56.819  1052  1052 D StatusBar.NetworkController: mDataConnected = false mShowRATIconAlways = false
-re_threadtime = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*)\s*(\d*)\s*(\d*) ([A-Z]) (.*): (.*)$')
+    #D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
+    re_brief = re.compile("^([A-Z])/([^\(]+)\(([^\)]+)\): (.*)$")
 
-adb_args = ' '.join(sys.argv[1:])
+    #08-29 13:35:56.819  1052  1052 D StatusBar.NetworkController: mDataConnected = false mShowRATIconAlways = false
+    re_threadtime = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*)\s*(\d*)\s*(\d*) ([A-Z]) (.*): (.*)$')
 
-# if someone is piping in to us, use stdin as input.  if not, invoke adb logcat
-if os.isatty(sys.stdin.fileno()):
-    input = os.popen("adb %s logcat" % adb_args)
-else:
-    input = sys.stdin
+    adb_args = ' '.join(sys.argv[1:])
 
-while True:
-    try:
-        line = input.readline()
-    except KeyboardInterrupt:
-        break
-
-    cur_header_size = HEADER_SIZE
-    mbrief = re_brief.match(line)
-    mtime = re_time.match(line)
-    mthreadtime = re_threadtime.match(line)
-    if mbrief:
-        tagtype, tag, pid, message = mbrief.groups()
-        timestamp = None
-    elif mtime:
-        timestamp, tagtype, tag, pid, message = mtime.groups()
-    elif mthreadtime:
-        timestamp, pid, _, tagtype, tag, message = mthreadtime.groups()
+    # if someone is piping in to us, use stdin as input.  if not, invoke adb logcat
+    if os.isatty(sys.stdin.fileno()):
+        input = os.popen("adb %s logcat" % adb_args)
     else:
-        continue
+        input = sys.stdin
 
-    linebuf = StringIO.StringIO()
-    color = tag2color(tag)
-    if color == None:
-        color = tagtype2color(tagtype)
-    linebuf.write(format(fg=color))
-    linebuf.write("%s " % tagtype)
+    while True:
+        try:
+            line = input.readline()
+        except KeyboardInterrupt:
+            break
 
-    if (timestamp):
-        cur_header_size += len(timestamp) + 1
-        linebuf.write("%s " % timestamp)
+        header_size = 2 + TAG_WIDTH + 8 + 1
+        mbrief = re_brief.match(line)
+        mtime = re_time.match(line)
+        mthreadtime = re_threadtime.match(line)
+        if mbrief:
+            tagtype, tag, pid, message = mbrief.groups()
+            timestamp = None
+        elif mtime:
+            timestamp, tagtype, tag, pid, message = mtime.groups()
+        elif mthreadtime:
+            timestamp, pid, _, tagtype, tag, message = mthreadtime.groups()
+        else:
+            continue
 
-    # right-align tag title and allocate color if needed
-    tag = tag.strip()
-    tag = tag[-TAG_WIDTH:].rjust(TAG_WIDTH)
-    pid = pid.rjust(5)
-    linebuf.write("%s(%s): " % (tag, pid))
+        linebuf = StringIO.StringIO()
+        color = tag2color(tag)
+        if color == None:
+            color = tagtype2color(tagtype)
+        linebuf.write(format(fg=color))
+        linebuf.write("%s " % tagtype)
 
-    # insert line wrapping as needed
-    message = indent_wrap(message, cur_header_size, WIDTH)
-    linebuf.write("%s" % message)
+        if (timestamp):
+            header_size += len(timestamp) + 1
+            linebuf.write("%s " % timestamp)
 
-    linebuf.write(format(reset=True))
-    line = linebuf.getvalue()
+        # right-align tag title and allocate color if needed
+        tag = tag.strip()
+        tag = tag[-TAG_WIDTH:].rjust(TAG_WIDTH)
+        pid = pid.rjust(5)
+        linebuf.write("%s(%s): " % (tag, pid))
 
-    print line
-    if len(line) == 0:
-        break
+        # insert line wrapping as needed
+        message = indent_wrap(message, header_size, WIDTH)
+        linebuf.write("%s" % message)
+
+        linebuf.write(format(reset=True))
+        line = linebuf.getvalue()
+
+        print line
+        if len(line) == 0:
+            break
 
