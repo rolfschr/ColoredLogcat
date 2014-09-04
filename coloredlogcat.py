@@ -95,18 +95,20 @@ if __name__ == '__main__':
     data = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, '1234')
     HEIGHT, WIDTH = struct.unpack('hh', data)
 
-    # 08-29 11:32:28.839 D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
-    re_time = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*):? ([A-Z])/(.*)\(\s*(\d*)\): (.*)$')
+    # 08-29 11:32:28.839 D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% ...
+    re_time = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*):? '
+                         '([A-Z])/(.*)\(\s*(\d*)\): (.*)$')
 
-    # D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, paused 7ms+6ms, total 72ms
+    # D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% free 3084K/11380K, ...
     re_brief = re.compile("^([A-Z])/(.*)\(\s*(\d*)\): (.*)$")
 
-    # 08-29 13:35:56.819  1052  1052 D StatusBar.NetworkController: mDataConnected = false mShowRATIconAlways = false
-    re_threadtime = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*)\s*(\d*)\s*(\d*) ([A-Z]) (.*): (.*)$')
+    # 08-29 13:35:56.819  1052  1052 D StatusBar.NetworkController: mDataCo...
+    re_threadtime = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*)\s*(\d*)\s*(\d*) '
+                               '([A-Z]) (.*): (.*)$')
 
     adb_args = ' '.join(sys.argv[1:])
 
-    # if someone is piping in to us, use stdin as input.  if not, invoke adb logcat
+    # if someone is piping in to us, use stdin as input. else invoke adb logcat
     if os.isatty(sys.stdin.fileno()):
         input = os.popen("adb logcat %s" % adb_args)
     else:
