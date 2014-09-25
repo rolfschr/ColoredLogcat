@@ -91,9 +91,11 @@ def tag2color(tag):
     return None
 
 if __name__ == '__main__':
-    # unpack the current terminal width/height
-    data = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, '1234')
-    HEIGHT, WIDTH = struct.unpack('hh', data)
+    pipe = not sys.stdout.isatty()
+    if (not pipe):
+        # unpack the current terminal width/height
+        data = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, '1234')
+        _, WIDTH = struct.unpack('hh', data)
 
     # 08-29 11:32:28.839 D/dalvikvm( 7497): GC_CONCURRENT freed 1976K, 73% ...
     re_time = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*):? '
@@ -160,8 +162,9 @@ if __name__ == '__main__':
         pid = pid.rjust(5)
         linebuf.write("%s(%s): " % (tag, pid))
 
-        # insert line wrapping as needed
-        message = indent_wrap(message, header_size, WIDTH)
+        if (not pipe):
+            # insert line wrapping as needed
+            message = indent_wrap(message, header_size, WIDTH)
         linebuf.write("%s" % message)
 
         linebuf.write(format(reset=True))
