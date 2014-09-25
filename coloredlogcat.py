@@ -106,6 +106,10 @@ if __name__ == '__main__':
     re_threadtime = re.compile('^(\d*-\d* \d*:\d*:\d*\.\d*)\s*(\d*)\s*(\d*) '
                                '([A-Z]) (.*): (.*)$')
 
+    # E 09-25 15:16:59.777 xxxxxxxxxxxxxxxxx170(22811): yyyyyyyyyyyy...
+    re_self = re.compile('^([A-Z]) (\d*-\d* \d*:\d*:\d*\.\d*) '
+                         '(.*)\(\s*(\d*)\): (.*)$')
+
     adb_args = ' '.join(sys.argv[1:])
 
     # if someone is piping in to us, use stdin as input. else invoke adb logcat
@@ -124,6 +128,7 @@ if __name__ == '__main__':
         mbrief = re_brief.match(line)
         mtime = re_time.match(line)
         mthreadtime = re_threadtime.match(line)
+        mself = re_self.match(line)
         if mbrief:
             tagtype, tag, pid, message = mbrief.groups()
             timestamp = None
@@ -131,6 +136,8 @@ if __name__ == '__main__':
             timestamp, tagtype, tag, pid, message = mtime.groups()
         elif mthreadtime:
             timestamp, pid, _, tagtype, tag, message = mthreadtime.groups()
+        elif mself:
+            tagtype, timestamp, tag, pid, message = mself.groups()
         elif len(line) == 0:
             break
         else:
