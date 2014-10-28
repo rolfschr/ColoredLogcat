@@ -13,6 +13,8 @@ to the usual output (warning = yellow, error = red, ...) now.
 Usage
 =====
 
+Put `coloredlogcat.py` in your $PATH.
+
 `coloredlogcat.py` behaves like plain `adb logcat`:
 
 ```
@@ -29,7 +31,7 @@ $> cat logfile.log | coloredlogcat.py
 $> adb logcat -v time | grep --line-buffered  `adb shell ps | grep com.android.chrome | cut -c 10-15` | coloredlogcat.py
 ```
 
-If you restart your app often, you may want to consider using `endless.sh`. This script is a wrapper around `coloredlogcat.py` and expects the app's package name as argument:
+If you restart your app often, you may want to consider putting `endless.sh` in your $PATH. This script is a wrapper around `coloredlogcat.py` and expects the app's package name as argument:
 
 ```
 $> endless.sh com.android.chrome
@@ -37,4 +39,4 @@ $> endless.sh com.android.chrome
 
 Press `CTRL+C` to restart reading. This allows you to easily follow the app when it was assigned a new pid.
 
-`endless.sh` briefly echos its own pid before runnig logcat whichc allows you to stop the script with `kill`.
+`endless.sh` briefly echos its own pid before runnig logcat which allows you to stop the script with `kill`.
