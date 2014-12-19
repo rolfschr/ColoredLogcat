@@ -39,4 +39,4 @@ $> endless.sh com.android.chrome
 
 Press `CTRL+C` to restart reading. This allows you to easily follow the app when it was assigned a new pid.
 
-`endless.sh` briefly echos its own pid before runnig logcat which allows you to stop the script with `kill`.
+`endless.sh` briefly echoes its own pid before running logcat which allows you to stop the script with `kill`.
